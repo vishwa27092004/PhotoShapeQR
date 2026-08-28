@@ -30,9 +30,9 @@ app = FastAPI(title="PhotoShapeQR - File Sharing QR")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://YOUR-FRONTEND.onrender.com",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://photoshapeqr.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
