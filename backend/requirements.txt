@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+python-multipart
+qrcode[pil]
+Pillow
+opencv-python
