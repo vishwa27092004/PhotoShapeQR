@@ -64,13 +64,19 @@ app.add_middleware(
     CORSMiddleware,
 
     allow_origins=[
-        # Local Vite development
         "http://localhost:5173",
         "http://127.0.0.1:5173",
 
-        # Vercel frontend
         "https://photoshapeqr.vercel.app",
     ],
+
+    # Allows Vercel preview deployments such as:
+    #
+    # https://photoshapeqr-c3hqwmuh8h-smart-build.vercel.app
+    #
+    allow_origin_regex=(
+        r"^https://photoshapeqr-[a-zA-Z0-9-]+\.vercel\.app$"
+    ),
 
     allow_credentials=True,
 
@@ -85,12 +91,7 @@ app.add_middleware(
 # ============================================================
 
 def db():
-
     con = sqlite3.connect(DB)
-
-    # --------------------------------------------------------
-    # Shares table
-    # --------------------------------------------------------
 
     con.execute(
         """
@@ -99,10 +100,6 @@ def db():
         )
         """
     )
-
-    # --------------------------------------------------------
-    # Files table
-    # --------------------------------------------------------
 
     con.execute(
         """
@@ -133,7 +130,6 @@ def public_base_url(request: Request) -> str:
     ).strip().rstrip("/")
 
     if configured:
-
         return configured
 
     return str(
@@ -186,10 +182,10 @@ def create_share():
 
 
 # ============================================================
-# SAVE FILE INTO SHARE
+# SAVE FILE
 # ============================================================
 
-def save_file_to_share(
+async def save_file_to_share(
     upload: UploadFile,
     share_id: str
 ):
@@ -200,7 +196,6 @@ def save_file_to_share(
         upload.filename
     )
 
-    # We keep only the filename for physical storage.
     filename = Path(
         original_filename
     ).name
@@ -211,7 +206,15 @@ def save_file_to_share(
 
     path = UPLOADS / storage_name
 
-    data = upload.file.read()
+    # IMPORTANT:
+    # Read asynchronously
+    data = await upload.read()
+
+    if not data:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File '{filename}' is empty."
+        )
 
     path.write_bytes(data)
 
@@ -302,7 +305,6 @@ def decode_qr(
     )
 
     if image is None:
-
         return None
 
     detector = cv2.QRCodeDetector()
@@ -326,11 +328,9 @@ def decode_qr(
             )
 
             if value:
-
                 return value
 
         except Exception:
-
             pass
 
     return None
@@ -423,7 +423,7 @@ async def generate(
 
         share_id = create_share()
 
-        save_file_to_share(
+        await save_file_to_share(
             content_file,
             share_id
         )
@@ -447,6 +447,7 @@ async def generate(
                 detail="Select at least one file."
             )
 
+        # ONE SHARE ID FOR ALL FILES
         share_id = create_share()
 
         saved_count = 0
@@ -454,10 +455,9 @@ async def generate(
         for upload in content_files:
 
             if not upload.filename:
-
                 continue
 
-            save_file_to_share(
+            await save_file_to_share(
                 upload,
                 share_id
             )
@@ -471,10 +471,7 @@ async def generate(
                 detail="No valid files were selected."
             )
 
-        # ----------------------------------------------------
         # ONE URL FOR ALL FILES
-        # ----------------------------------------------------
-
         payload = (
             f"{public_base_url(request)}"
             f"/share/{quote(share_id)}"
@@ -519,7 +516,6 @@ async def generate(
     # ========================================================
 
     return {
-
         "id": qr_id,
 
         "qr_url":
@@ -529,12 +525,11 @@ async def generate(
         "payload": payload,
 
         "content_type": content_type,
-
     }
 
 
 # ============================================================
-# SERVE GENERATED QR IMAGE
+# SERVE GENERATED QR
 # ============================================================
 
 @app.get(
@@ -572,17 +567,14 @@ def generated(
     response_class=HTMLResponse
 )
 def share_page(
-
     share_id: str,
-
     request: Request
-
 ):
 
     con = db()
 
     # --------------------------------------------------------
-    # Check share
+    # CHECK SHARE
     # --------------------------------------------------------
 
     share = con.execute(
@@ -605,7 +597,7 @@ def share_page(
 
 
     # --------------------------------------------------------
-    # Get files
+    # GET FILES
     # --------------------------------------------------------
 
     rows = con.execute(
@@ -623,7 +615,6 @@ def share_page(
 
     con.close()
 
-
     if not rows:
 
         raise HTTPException(
@@ -638,7 +629,7 @@ def share_page(
 
 
     # ========================================================
-    # BUILD FILE CARDS
+    # FILE CARDS
     # ========================================================
 
     file_cards = ""
@@ -796,44 +787,33 @@ def share_page(
 
 
         # ----------------------------------------------------
-        # FILE CARD
+        # CARD
         # ----------------------------------------------------
 
         file_cards += f"""
-
         <div class="fileCard">
 
             <div class="previewContainer">
-
                 {preview}
-
             </div>
-
 
             <div class="fileInfo">
 
                 <div class="filename">
-
                     {safe_name}
-
                 </div>
-
 
                 <div class="mime">
-
                     {escape(mime)}
-
                 </div>
-
 
                 <div class="buttons">
 
                     {view_button}
 
                     <a
-                        href="{safe_url}"
+                        href="{safe_url}?download=true"
                         class="button download"
-                        download
                     >
                         Download
                     </a>
@@ -843,7 +823,6 @@ def share_page(
             </div>
 
         </div>
-
         """
 
 
@@ -851,11 +830,10 @@ def share_page(
 
 
     # ========================================================
-    # HTML PAGE
+    # SHARE HTML
     # ========================================================
 
     html = f"""
-
 <!DOCTYPE html>
 
 <html lang="en">
@@ -891,6 +869,7 @@ body {{
     margin: 0;
 
     font-family:
+        Inter,
         Arial,
         Helvetica,
         sans-serif;
@@ -905,7 +884,6 @@ body {{
     color: #222;
 
     min-height: 100vh;
-
 }}
 
 
@@ -913,13 +891,14 @@ body {{
 
     width: 100%;
 
-    max-width: 1000px;
+    max-width: 1100px;
 
     margin: auto;
 
     padding:
-        20px 16px 50px;
-
+        20px
+        16px
+        60px;
 }}
 
 
@@ -928,30 +907,29 @@ body {{
     text-align: center;
 
     padding:
-        25px 0 30px;
-
+        35px
+        0
+        40px;
 }}
 
 
 .logo {{
 
-    font-size: 34px;
+    font-size: 36px;
 
-    font-weight: 800;
+    font-weight: 900;
 
-    letter-spacing: -1px;
-
+    letter-spacing: -1.5px;
 }}
 
 
 .subtitle {{
 
-    margin-top: 8px;
+    margin-top: 10px;
 
     color: #666;
 
     font-size: 16px;
-
 }}
 
 
@@ -968,24 +946,24 @@ body {{
             )
         );
 
-    gap: 20px;
-
+    gap: 22px;
 }}
 
 
 .fileCard {{
 
-    background: #ffffff;
+    background: white;
 
     border:
-        1px solid #e8e8e8;
+        1px solid
+        #e8e8ee;
 
-    border-radius: 18px;
+    border-radius: 22px;
 
     padding: 16px;
 
     box-shadow:
-        0 8px 30px
+        0 15px 45px
         rgba(
             0,
             0,
@@ -995,6 +973,25 @@ body {{
 
     overflow: hidden;
 
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}}
+
+
+.fileCard:hover {{
+
+    transform:
+        translateY(-5px);
+
+    box-shadow:
+        0 22px 55px
+        rgba(
+            0,
+            0,
+            0,
+            0.12
+        );
 }}
 
 
@@ -1002,7 +999,7 @@ body {{
 
     width: 100%;
 
-    height: 230px;
+    height: 240px;
 
     display: flex;
 
@@ -1010,14 +1007,13 @@ body {{
 
     align-items: center;
 
-    background: #f5f5f5;
+    background: #f5f5f7;
 
-    border-radius: 14px;
+    border-radius: 16px;
 
     overflow: hidden;
 
     position: relative;
-
 }}
 
 
@@ -1028,14 +1024,12 @@ body {{
     height: 100%;
 
     object-fit: contain;
-
 }}
 
 
 .iconPreview {{
 
     font-size: 75px;
-
 }}
 
 
@@ -1048,14 +1042,12 @@ body {{
     left: 5%;
 
     width: 90%;
-
 }}
 
 
 .fileInfo {{
 
-    padding-top: 15px;
-
+    padding-top: 16px;
 }}
 
 
@@ -1063,12 +1055,11 @@ body {{
 
     font-size: 17px;
 
-    font-weight: 700;
+    font-weight: 800;
 
     line-height: 1.4;
 
     word-break: break-word;
-
 }}
 
 
@@ -1078,10 +1069,9 @@ body {{
 
     font-size: 12px;
 
-    margin-top: 5px;
+    margin-top: 6px;
 
     word-break: break-word;
-
 }}
 
 
@@ -1089,12 +1079,11 @@ body {{
 
     display: flex;
 
-    gap: 8px;
+    gap: 9px;
 
-    margin-top: 14px;
+    margin-top: 15px;
 
     flex-wrap: wrap;
-
 }}
 
 
@@ -1105,14 +1094,24 @@ body {{
     text-decoration: none;
 
     padding:
-        10px 15px;
+        10px
+        15px;
 
-    border-radius: 9px;
+    border-radius: 10px;
 
     font-weight: 700;
 
     font-size: 14px;
 
+    transition:
+        transform 0.2s ease;
+}}
+
+
+.button:hover {{
+
+    transform:
+        translateY(-2px);
 }}
 
 
@@ -1121,7 +1120,6 @@ body {{
     background: #eeeeee;
 
     color: #222;
-
 }}
 
 
@@ -1129,8 +1127,7 @@ body {{
 
     background: #111111;
 
-    color: #ffffff;
-
+    color: white;
 }}
 
 
@@ -1140,10 +1137,9 @@ body {{
 
     color: #777;
 
-    margin-top: 40px;
+    margin-top: 45px;
 
     font-size: 13px;
-
 }}
 
 
@@ -1152,30 +1148,22 @@ body {{
     .container {{
 
         padding:
-            15px 12px 40px;
-
+            15px
+            12px
+            40px;
     }}
 
     .logo {{
 
-        font-size: 28px;
-
-    }}
-
-    .fileCard {{
-
-        border-radius: 14px;
-
+        font-size: 29px;
     }}
 
     .previewContainer {{
 
         height: 210px;
-
     }}
 
 }}
-
 
 </style>
 
@@ -1191,16 +1179,11 @@ body {{
     <div class="header">
 
         <div class="logo">
-
             📦 PhotoShapeQR
-
         </div>
 
-
         <div class="subtitle">
-
             {count} file(s) shared
-
         </div>
 
     </div>
@@ -1215,7 +1198,7 @@ body {{
 
     <div class="footer">
 
-        Shared securely using PhotoShapeQR
+        Shared using PhotoShapeQR
 
     </div>
 
@@ -1226,8 +1209,8 @@ body {{
 </body>
 
 </html>
-
 """
+
 
     return HTMLResponse(
         content=html
@@ -1246,7 +1229,6 @@ def get_file(
     file_id: str,
 
     download: bool = False
-
 ):
 
     con = db()
@@ -1289,19 +1271,17 @@ def get_file(
         )
 
 
-    # --------------------------------------------------------
-    # Content-Disposition
-    # --------------------------------------------------------
-
     encoded_filename = quote(
         filename
     )
+
 
     disposition = (
         "attachment"
         if download
         else "inline"
     )
+
 
     headers = {
 
