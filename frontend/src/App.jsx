@@ -1,16 +1,10 @@
 import { useRef, useState } from "react";
+import "./styles.css";
 
 
 // ============================================================
-// API URL
+// API
 // ============================================================
-//
-// Local:
-// http://localhost:8000
-//
-// Production:
-// VITE_API_URL=https://photoshapeqr-backend.onrender.com
-//
 
 const API =
   import.meta.env.VITE_API_URL ||
@@ -22,21 +16,54 @@ const API =
 // ============================================================
 
 const TYPES = [
+  {
+    value: "url",
+    icon: "↗",
+    title: "Website",
+    description: "Share a URL",
+  },
 
-  ["url", "🔗", "URL"],
+  {
+    value: "text",
+    icon: "T",
+    title: "Text",
+    description: "Share a message",
+  },
 
-  ["text", "📝", "Text"],
+  {
+    value: "file",
+    icon: "▤",
+    title: "Document",
+    description: "PDF, DOCX, ZIP...",
+  },
 
-  ["file", "📄", "Document"],
+  {
+    value: "image",
+    icon: "◈",
+    title: "Image",
+    description: "JPG, PNG, WEBP...",
+  },
 
-  ["image", "🖼️", "Image"],
+  {
+    value: "audio",
+    icon: "♫",
+    title: "Audio",
+    description: "MP3, WAV...",
+  },
 
-  ["audio", "🎵", "MP3 / Audio"],
+  {
+    value: "video",
+    icon: "▶",
+    title: "Video",
+    description: "MP4, MOV...",
+  },
 
-  ["video", "🎬", "MP4 / Video"],
-
-  ["folder", "📦", "Multiple Files"],
-
+  {
+    value: "folder",
+    icon: "▦",
+    title: "Multiple Files",
+    description: "One QR for many files",
+  },
 ];
 
 
@@ -46,54 +73,43 @@ const TYPES = [
 
 function App() {
 
-
   // ----------------------------------------------------------
-  // State
+  // STATE
   // ----------------------------------------------------------
 
   const [type, setType] =
     useState("url");
 
-
   const [text, setText] =
     useState("https://example.com");
-
 
   const [file, setFile] =
     useState(null);
 
-
   const [files, setFiles] =
     useState([]);
-
 
   const [qr, setQr] =
     useState(null);
 
-
   const [scanResult, setScanResult] =
     useState("");
-
 
   const [busy, setBusy] =
     useState(false);
 
-
   const [message, setMessage] =
     useState("");
-
 
   const scannerInput =
     useRef(null);
 
 
-  // ========================================================
+  // ----------------------------------------------------------
   // RESET
-  // ========================================================
+  // ----------------------------------------------------------
 
-  const resetContent = (
-    nextType
-  ) => {
+  const resetContent = (nextType) => {
 
     setType(nextType);
 
@@ -101,16 +117,18 @@ function App() {
 
     setFiles([]);
 
+    setQr(null);
+
     setMessage("");
 
-    setQr(null);
+    setScanResult("");
 
   };
 
 
-  // ========================================================
+  // ==========================================================
   // GENERATE QR
-  // ========================================================
+  // ==========================================================
 
   const generate = async () => {
 
@@ -122,10 +140,6 @@ function App() {
 
 
     try {
-
-      // ------------------------------------------------------
-      // Create FormData
-      // ------------------------------------------------------
 
       const form =
         new FormData();
@@ -144,7 +158,7 @@ function App() {
 
 
       // ------------------------------------------------------
-      // Multiple Files
+      // MULTIPLE FILES
       // ------------------------------------------------------
 
       if (type === "folder") {
@@ -174,7 +188,7 @@ function App() {
 
 
       // ------------------------------------------------------
-      // Single File
+      // SINGLE FILE
       // ------------------------------------------------------
 
       else if (
@@ -204,7 +218,7 @@ function App() {
 
 
       // ------------------------------------------------------
-      // Send Request
+      // API REQUEST
       // ------------------------------------------------------
 
       const response =
@@ -217,10 +231,6 @@ function App() {
         );
 
 
-      // ------------------------------------------------------
-      // Read Response
-      // ------------------------------------------------------
-
       const data =
         await response.json();
 
@@ -229,25 +239,21 @@ function App() {
 
         throw new Error(
           data.detail ||
-          "Generation failed."
+          "QR generation failed."
         );
 
       }
 
-
-      // ------------------------------------------------------
-      // Show QR
-      // ------------------------------------------------------
 
       setQr(data);
 
     }
 
 
-    catch (err) {
+    catch (error) {
 
       setMessage(
-        err.message ||
+        error.message ||
         "Something went wrong."
       );
 
@@ -263,13 +269,11 @@ function App() {
   };
 
 
-  // ========================================================
+  // ==========================================================
   // SCAN QR
-  // ========================================================
+  // ==========================================================
 
-  const scan = async (
-    event
-  ) => {
+  const scan = async (event) => {
 
     const selected =
       event.target.files?.[0];
@@ -284,9 +288,9 @@ function App() {
 
     setBusy(true);
 
-    setScanResult("");
-
     setMessage("");
+
+    setScanResult("");
 
 
     try {
@@ -319,7 +323,7 @@ function App() {
 
         throw new Error(
           data.detail ||
-          "Could not scan QR."
+          "Could not scan QR code."
         );
 
       }
@@ -332,11 +336,11 @@ function App() {
     }
 
 
-    catch (err) {
+    catch (error) {
 
       setMessage(
-        err.message ||
-        "Could not scan QR."
+        error.message ||
+        "Could not scan QR code."
       );
 
     }
@@ -353,9 +357,9 @@ function App() {
   };
 
 
-  // ========================================================
+  // ==========================================================
   // DOWNLOAD QR
-  // ========================================================
+  // ==========================================================
 
   const downloadQR = () => {
 
@@ -366,38 +370,38 @@ function App() {
     }
 
 
-    const a =
+    const link =
       document.createElement(
         "a"
       );
 
 
-    a.href =
+    link.href =
       qr.qr_url;
 
 
-    a.download =
-      "photoshapeqr.png";
+    link.download =
+      "PhotoShapeQR.png";
 
 
     document.body.appendChild(
-      a
+      link
     );
 
 
-    a.click();
+    link.click();
 
 
     document.body.removeChild(
-      a
+      link
     );
 
   };
 
 
-  // ========================================================
+  // ==========================================================
   // OPEN SCAN RESULT
-  // ========================================================
+  // ==========================================================
 
   const openScanResult = () => {
 
@@ -417,112 +421,300 @@ function App() {
   };
 
 
-  // ========================================================
+  // ==========================================================
+  // FILE ICON
+  // ==========================================================
+
+  const getFileIcon = () => {
+
+    if (type === "image") {
+      return "◈";
+    }
+
+    if (type === "audio") {
+      return "♫";
+    }
+
+    if (type === "video") {
+      return "▶";
+    }
+
+    if (type === "folder") {
+      return "▦";
+    }
+
+    return "▤";
+
+  };
+
+
+  // ==========================================================
   // RENDER
-  // ========================================================
+  // ==========================================================
 
   return (
 
     <div className="app">
 
 
-      {/* ================================================== */}
-      {/* HEADER                                             */}
-      {/* ================================================== */}
+      {/* ==================================================== */}
+      {/* BACKGROUND EFFECTS                                  */}
+      {/* ==================================================== */}
 
-      <header>
+      <div className="background">
+
+        <div className="orb orbOne"></div>
+
+        <div className="orb orbTwo"></div>
+
+        <div className="orb orbThree"></div>
+
+        <div className="gridBackground"></div>
+
+      </div>
+
+
+      {/* ==================================================== */}
+      {/* HEADER                                               */}
+      {/* ==================================================== */}
+
+      <header className="navbar">
 
         <div className="brand">
 
-          <div className="brandIcon">
-            QR
+          <div className="brandMark">
+
+            <span>⌁</span>
+
+            <span>QR</span>
+
           </div>
 
 
-          <div>
+          <div className="brandText">
 
-            <h1>
-              PhotoShape<span>QR</span>
-            </h1>
+            <div className="brandName">
+
+              PhotoShape
+              <span>QR</span>
+
+            </div>
 
 
-            <p>
-              Share links, text and files with a QR code
-            </p>
+            <div className="brandTagline">
+
+              Share smarter.
+
+            </div>
 
           </div>
 
         </div>
 
 
-        <div className="headerBadge">
+        <div className="statusPill">
 
-          Simple • Fast • Scannable
+          <span className="statusDot"></span>
+
+          Free & Fast
 
         </div>
 
       </header>
 
 
-      {/* ================================================== */}
-      {/* MAIN                                               */}
-      {/* ================================================== */}
+      {/* ==================================================== */}
+      {/* HERO                                                 */}
+      {/* ==================================================== */}
 
-      <main>
+      <section className="hero">
 
+        <div className="heroBadge">
 
-        {/* ================================================= */}
-        {/* CREATE QR                                         */}
-        {/* ================================================= */}
+          <span>✦</span>
 
-        <section className="panel">
+          Instant QR sharing
 
-
-          <h2>
-            Create QR Code
-          </h2>
+        </div>
 
 
-          <p className="muted">
+        <h1>
 
-            Choose what you want to share.
+          One QR.
+          <br />
 
-          </p>
+          <span>
+            Everything shared.
+          </span>
+
+        </h1>
 
 
-          {/* ============================================== */}
-          {/* TYPE GRID                                      */}
-          {/* ============================================== */}
+        <p>
+
+          Turn links, documents, photos, videos and
+          multiple files into one beautiful,
+          instantly scannable QR code.
+
+        </p>
+
+
+        <div className="heroStats">
+
+          <div>
+
+            <strong>
+              01
+            </strong>
+
+            <span>
+              Select
+            </span>
+
+          </div>
+
+
+          <div className="statLine"></div>
+
+
+          <div>
+
+            <strong>
+              02
+            </strong>
+
+            <span>
+              Generate
+            </span>
+
+          </div>
+
+
+          <div className="statLine"></div>
+
+
+          <div>
+
+            <strong>
+              03
+            </strong>
+
+            <span>
+              Share
+            </span>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* ==================================================== */}
+      {/* MAIN                                                  */}
+      {/* ==================================================== */}
+
+      <main className="mainContainer">
+
+
+        {/* ================================================== */}
+        {/* CREATE PANEL                                        */}
+        {/* ================================================== */}
+
+        <section className="glassPanel createPanel">
+
+
+          <div className="panelHeader">
+
+            <div>
+
+              <div className="sectionEyebrow">
+
+                CREATE
+
+              </div>
+
+
+              <h2>
+
+                What do you want to share?
+
+              </h2>
+
+
+              <p>
+
+                Choose a content type and generate
+                your QR code in seconds.
+
+              </p>
+
+            </div>
+
+
+            <div className="stepBadge">
+
+              STEP 01
+
+            </div>
+
+          </div>
+
+
+          {/* ================================================= */}
+          {/* TYPE CARDS                                        */}
+          {/* ================================================= */}
 
           <div className="typeGrid">
 
             {TYPES.map(
-              ([
-                value,
-                icon,
-                label,
-              ]) => (
+              (item) => (
 
                 <button
-                  key={value}
+                  key={item.value}
                   type="button"
                   className={
-                    type === value
-                      ? "type active"
-                      : "type"
+                    type === item.value
+                      ? "typeCard active"
+                      : "typeCard"
                   }
                   onClick={() =>
                     resetContent(
-                      value
+                      item.value
                     )
                   }
                 >
 
-                  <span>
-                    {icon}
-                  </span>
+                  <div className="typeIcon">
 
-                  {label}
+                    {item.icon}
+
+                  </div>
+
+
+                  <div className="typeInfo">
+
+                    <strong>
+
+                      {item.title}
+
+                    </strong>
+
+
+                    <span>
+
+                      {item.description}
+
+                    </span>
+
+                  </div>
+
+
+                  <div className="typeArrow">
+
+                    →
+
+                  </div>
 
                 </button>
 
@@ -532,250 +724,375 @@ function App() {
           </div>
 
 
-          {/* ============================================== */}
-          {/* URL                                             */}
-          {/* ============================================== */}
+          {/* ================================================= */}
+          {/* CONTENT AREA                                      */}
+          {/* ================================================= */}
 
-          {type === "url" && (
-
-            <label>
-
-              Website URL
-
-              <input
-                type="url"
-                value={text}
-                onChange={(e) =>
-                  setText(
-                    e.target.value
-                  )
-                }
-                placeholder="https://example.com"
-              />
-
-            </label>
-
-          )}
+          <div className="contentArea">
 
 
-          {/* ============================================== */}
-          {/* TEXT                                            */}
-          {/* ============================================== */}
+            {/* =============================================== */}
+            {/* URL                                               */}
+            {/* =============================================== */}
 
-          {type === "text" && (
+            {type === "url" && (
 
-            <label>
+              <div className="fieldGroup">
 
-              Text
+                <label>
 
-              <textarea
-                value={text}
-                onChange={(e) =>
-                  setText(
-                    e.target.value
-                  )
-                }
-                placeholder="Enter your message..."
-                rows="6"
-              />
+                  Website URL
 
-            </label>
-
-          )}
+                </label>
 
 
-          {/* ============================================== */}
-          {/* SINGLE FILE                                     */}
-          {/* ============================================== */}
+                <div className="inputWrapper">
 
-          {[
-            "file",
-            "image",
-            "audio",
-            "video",
-          ].includes(type) && (
+                  <span className="inputIcon">
 
-            <label className="uploadBox">
+                    ↗
+
+                  </span>
 
 
-              <strong>
+                  <input
+                    type="url"
+                    value={text}
+                    onChange={(e) =>
+                      setText(
+                        e.target.value
+                      )
+                    }
+                    placeholder="https://example.com"
+                  />
 
-                {type === "audio"
-                  ? "Choose an MP3/audio file"
-                  : type === "video"
-                  ? "Choose an MP4/video file"
-                  : type === "image"
-                  ? "Choose an image"
-                  : "Choose a document"}
-
-              </strong>
-
-
-              <span>
-
-                {file
-                  ? file.name
-                  : "Click to browse"}
-
-              </span>
-
-
-              <input
-                type="file"
-                accept={
-                  type === "audio"
-                    ? "audio/*"
-                    : type === "video"
-                    ? "video/*"
-                    : type === "image"
-                    ? "image/*"
-                    : "*/*"
-                }
-                onChange={(e) =>
-                  setFile(
-                    e.target.files?.[0] ||
-                    null
-                  )
-                }
-              />
-
-
-            </label>
-
-          )}
-
-
-          {/* ============================================== */}
-          {/* MULTIPLE FILES                                  */}
-          {/* ============================================== */}
-
-          {type === "folder" && (
-
-            <label className="uploadBox">
-
-
-              <strong>
-
-                Select multiple images / files
-
-              </strong>
-
-
-              <span>
-
-                {files.length
-                  ? `${files.length} file(s) selected`
-                  : "Click to choose multiple files"}
-
-              </span>
-
-
-              <input
-                type="file"
-                multiple
-                accept="*/*"
-                onChange={(e) =>
-                  setFiles(
-                    Array.from(
-                      e.target.files ||
-                      []
-                    )
-                  )
-                }
-              />
-
-
-            </label>
-
-          )}
-
-
-          {/* ============================================== */}
-          {/* SELECTED FILE LIST                              */}
-          {/* ============================================== */}
-
-          {type === "folder" &&
-            files.length > 0 && (
-
-              <div
-                style={{
-                  marginTop: "15px",
-                  padding: "14px",
-                  background: "#f7f7f7",
-                  borderRadius: "12px",
-                  maxHeight: "220px",
-                  overflowY: "auto",
-                }}
-              >
-
-                <strong>
-
-                  Selected files:
-
-                </strong>
-
-
-                <ul
-                  style={{
-                    marginTop: "10px",
-                    paddingLeft: "20px",
-                  }}
-                >
-
-                  {files.map(
-                    (selectedFile, index) => (
-
-                      <li
-                        key={
-                          `${selectedFile.name}-${index}`
-                        }
-                        style={{
-                          marginBottom:
-                            "5px",
-                          wordBreak:
-                            "break-word",
-                        }}
-                      >
-
-                        {selectedFile.name}
-
-                      </li>
-
-                    )
-                  )}
-
-                </ul>
+                </div>
 
               </div>
 
             )}
 
 
-          {/* ============================================== */}
-          {/* GENERATE BUTTON                                 */}
-          {/* ============================================== */}
+            {/* =============================================== */}
+            {/* TEXT                                              */}
+            {/* =============================================== */}
 
-          <button
-            type="button"
-            className="generate"
-            onClick={generate}
-            disabled={busy}
-          >
+            {type === "text" && (
 
-            {busy
-              ? "Working..."
-              : "Generate QR Code"}
+              <div className="fieldGroup">
 
-          </button>
+                <label>
+
+                  Your message
+
+                </label>
 
 
-          {/* ============================================== */}
-          {/* ERROR                                           */}
-          {/* ============================================== */}
+                <textarea
+                  value={text}
+                  onChange={(e) =>
+                    setText(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Write something you want to share..."
+                  rows="6"
+                />
+
+
+                <div className="fieldHint">
+
+                  Your text will be encoded
+                  directly into the QR code.
+
+                </div>
+
+              </div>
+
+            )}
+
+
+            {/* =============================================== */}
+            {/* SINGLE FILE                                       */}
+            {/* =============================================== */}
+
+            {[
+              "file",
+              "image",
+              "audio",
+              "video",
+            ].includes(type) && (
+
+              <div className="fieldGroup">
+
+                <label>
+
+                  Select your file
+
+                </label>
+
+
+                <div className="dropZone">
+
+                  <div className="dropIcon">
+
+                    {getFileIcon()}
+
+                  </div>
+
+
+                  <h3>
+
+                    {file
+                      ? file.name
+                      : `Upload ${
+                          type === "image"
+                            ? "an image"
+                            : type === "audio"
+                            ? "an audio file"
+                            : type === "video"
+                            ? "a video"
+                            : "a document"
+                        }`
+                    }
+
+                  </h3>
+
+
+                  <p>
+
+                    {file
+                      ? `${(
+                          file.size /
+                          1024 /
+                          1024
+                        ).toFixed(2)} MB`
+                      : "Click anywhere to browse your device"
+                    }
+
+                  </p>
+
+
+                  <div className="browseButton">
+
+                    {file
+                      ? "Choose another"
+                      : "Browse files"
+                    }
+
+                  </div>
+
+
+                  <input
+                    type="file"
+                    accept={
+                      type === "audio"
+                        ? "audio/*"
+                        : type === "video"
+                        ? "video/*"
+                        : type === "image"
+                        ? "image/*"
+                        : "*/*"
+                    }
+                    onChange={(e) =>
+                      setFile(
+                        e.target.files?.[0] ||
+                        null
+                      )
+                    }
+                  />
+
+                </div>
+
+              </div>
+
+            )}
+
+
+            {/* =============================================== */}
+            {/* MULTIPLE FILES                                    */}
+            {/* =============================================== */}
+
+            {type === "folder" && (
+
+              <div className="fieldGroup">
+
+                <label>
+
+                  Select multiple files
+
+                </label>
+
+
+                <div
+                  className={
+                    files.length
+                      ? "dropZone selected"
+                      : "dropZone"
+                  }
+                >
+
+                  <div className="dropIcon">
+
+                    ▦
+
+                  </div>
+
+
+                  <h3>
+
+                    {files.length
+                      ? `${files.length} files selected`
+                      : "Upload multiple files"
+                    }
+
+                  </h3>
+
+
+                  <p>
+
+                    Select photos, documents,
+                    videos, audio and more.
+
+                  </p>
+
+
+                  <div className="browseButton">
+
+                    {files.length
+                      ? "Add more files"
+                      : "Browse files"
+                    }
+
+                  </div>
+
+
+                  <input
+                    type="file"
+                    multiple
+                    accept="*/*"
+                    onChange={(e) =>
+                      setFiles(
+                        Array.from(
+                          e.target.files || []
+                        )
+                      )
+                    }
+                  />
+
+                </div>
+
+
+                {/* ============================================ */}
+                {/* FILE LIST                                      */}
+                {/* ============================================ */}
+
+                {files.length > 0 && (
+
+                  <div className="selectedFiles">
+
+                    <div className="selectedHeader">
+
+                      <span>
+
+                        Selected files
+
+                      </span>
+
+
+                      <strong>
+
+                        {files.length}
+
+                      </strong>
+
+                    </div>
+
+
+                    <div className="fileList">
+
+                      {files.map(
+                        (
+                          selectedFile,
+                          index
+                        ) => (
+
+                          <div
+                            className="fileItem"
+                            key={`${selectedFile.name}-${index}`}
+                          >
+
+                            <div className="miniFileIcon">
+
+                              {selectedFile.type.startsWith(
+                                "image/"
+                              )
+                                ? "◈"
+                                : selectedFile.type.startsWith(
+                                    "video/"
+                                  )
+                                ? "▶"
+                                : selectedFile.type.startsWith(
+                                    "audio/"
+                                  )
+                                ? "♫"
+                                : "▤"
+                              }
+
+                            </div>
+
+
+                            <div className="fileItemInfo">
+
+                              <span>
+
+                                {selectedFile.name}
+
+                              </span>
+
+
+                              <small>
+
+                                {(
+                                  selectedFile.size /
+                                  1024 /
+                                  1024
+                                ).toFixed(2)}{" "}
+                                MB
+
+                              </small>
+
+                            </div>
+
+                          </div>
+
+                        )
+                      )}
+
+                    </div>
+
+                  </div>
+
+                )}
+
+              </div>
+
+            )}
+
+          </div>
+
+
+          {/* ================================================= */}
+          {/* ERROR                                             */}
+          {/* ================================================= */}
 
           {message && (
 
-            <div className="error">
+            <div className="message errorMessage">
+
+              <span>
+                !
+              </span>
 
               {message}
 
@@ -784,26 +1101,54 @@ function App() {
           )}
 
 
-          {/* ============================================== */}
-          {/* NOTE                                            */}
-          {/* ============================================== */}
+          {/* ================================================= */}
+          {/* GENERATE BUTTON                                    */}
+          {/* ================================================= */}
 
-          <div className="note">
+          <button
+            type="button"
+            className="primaryButton"
+            onClick={generate}
+            disabled={busy}
+          >
 
-            <strong>
+            {busy ? (
 
-              Multiple Files → One QR
+              <>
 
-            </strong>
+                <span className="spinner"></span>
 
+                Generating your QR...
+
+              </>
+
+            ) : (
+
+              <>
+
+                Generate QR Code
+
+                <span className="buttonArrow">
+
+                  →
+
+                </span>
+
+              </>
+
+            )}
+
+          </button>
+
+
+          <div className="privacyNote">
 
             <span>
-
-              Select multiple images or files.
-              PhotoShapeQR creates one share link
-              and one QR code for all selected files.
-
+              ✦
             </span>
+
+            Your files are shared through
+            a unique QR link.
 
           </div>
 
@@ -811,48 +1156,122 @@ function App() {
         </section>
 
 
-        {/* ================================================= */}
-        {/* QR PREVIEW                                       */}
-        {/* ================================================= */}
+        {/* ================================================== */}
+        {/* QR PREVIEW                                          */}
+        {/* ================================================== */}
 
-        <section className="panel previewPanel">
+        <section className="glassPanel qrPanel">
 
 
-          <h2>
-            Your QR Code
-          </h2>
+          <div className="panelHeader">
+
+            <div>
+
+              <div className="sectionEyebrow">
+
+                PREVIEW
+
+              </div>
+
+
+              <h2>
+
+                Your QR code
+
+              </h2>
+
+
+              <p>
+
+                Ready to scan and share.
+
+              </p>
+
+            </div>
+
+
+            <div className="stepBadge">
+
+              STEP 02
+
+            </div>
+
+          </div>
 
 
           {qr ? (
 
-            <>
+            <div className="qrResult">
 
 
-              <div className="qrBox">
+              {/* ============================================= */}
+              {/* QR                                             */}
+              {/* ============================================= */}
 
-                <img
-                  src={qr.qr_url}
-                  alt="Generated QR code"
-                />
+              <div className="qrFrame">
+
+                <div className="qrGlow"></div>
+
+
+                <div className="qrInner">
+
+                  <img
+                    src={qr.qr_url}
+                    alt="Generated PhotoShapeQR QR code"
+                  />
+
+                </div>
 
               </div>
 
 
-              <div className="success">
+              {/* ============================================= */}
+              {/* SUCCESS                                        */}
+              {/* ============================================= */}
 
-                ✓ QR code generated successfully
+              <div className="successMessage">
 
-              </div>
+                <span className="successIcon">
 
+                  ✓
 
-              <div className="payload">
-
-                <b>
-                  Encoded content
-                </b>
+                </span>
 
 
                 <div>
+
+                  <strong>
+
+                    QR code ready
+
+                  </strong>
+
+
+                  <span>
+
+                    Scan it with any phone camera.
+
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              {/* ============================================= */}
+              {/* LINK                                           */}
+              {/* ============================================= */}
+
+              <div className="encodedBox">
+
+                <div className="encodedLabel">
+
+                  SHARED LINK
+
+                </div>
+
+
+                <div className="encodedValue">
 
                   {qr.payload}
 
@@ -861,126 +1280,191 @@ function App() {
               </div>
 
 
+              {/* ============================================= */}
+              {/* DOWNLOAD                                       */}
+              {/* ============================================= */}
+
               <button
                 type="button"
-                className="download"
+                className="secondaryButton"
                 onClick={downloadQR}
               >
 
-                Download QR PNG
+                <span>
+
+                  ↓
+
+                </span>
+
+                Download QR image
 
               </button>
 
 
-            </>
+            </div>
 
           ) : (
 
-            <div className="empty">
+            <div className="emptyQR">
+
+              <div className="emptyQRVisual">
+
+                <div className="fakeQR">
+
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+
+                </div>
 
 
-              <div className="emptyIcon">
-                ▦
+                <div className="scanLine"></div>
+
               </div>
 
 
               <h3>
 
-                Your QR code will appear here
+                Your QR appears here
 
               </h3>
 
 
               <p>
 
-                Select URL, text, document,
-                image, MP3, MP4 or multiple files.
+                Configure your content on the left
+                and generate a QR code.
 
               </p>
-
 
             </div>
 
           )}
 
-
         </section>
 
 
-        {/* ================================================= */}
-        {/* SCANNER                                          */}
-        {/* ================================================= */}
+        {/* ================================================== */}
+        {/* SCANNER                                             */}
+        {/* ================================================== */}
 
-        <section className="panel scanner">
-
-
-          <h2>
-            Scan QR Code
-          </h2>
+        <section className="glassPanel scannerPanel">
 
 
-          <p className="muted">
-
-            Upload a QR image to read its content.
-
-          </p>
+          <div className="scannerContent">
 
 
-          <input
-            ref={scannerInput}
-            type="file"
-            accept="image/*"
-            onChange={scan}
-            hidden
-          />
+            <div className="scannerIcon">
+
+              ⌁
+
+            </div>
 
 
-          <button
-            type="button"
-            className="scanButton"
-            onClick={() =>
-              scannerInput.current?.click()
-            }
-            disabled={busy}
-          >
+            <div className="scannerText">
 
-            Scan QR Image
+              <div className="sectionEyebrow">
 
-          </button>
+                SCANNER
+
+              </div>
+
+
+              <h2>
+
+                Already have a QR?
+
+              </h2>
+
+
+              <p>
+
+                Upload a QR image and we'll
+                read its content for you.
+
+              </p>
+
+            </div>
+
+
+            <input
+              ref={scannerInput}
+              type="file"
+              accept="image/*"
+              onChange={scan}
+              hidden
+            />
+
+
+            <button
+              type="button"
+              className="scanButton"
+              onClick={() =>
+                scannerInput.current?.click()
+              }
+              disabled={busy}
+            >
+
+              {busy
+                ? "Reading..."
+                : "Upload QR image"
+              }
+
+              <span>
+                →
+              </span>
+
+            </button>
+
+
+          </div>
 
 
           {scanResult && (
 
             <div className="scanResult">
 
+              <div>
 
-              <b>
-                QR content
-              </b>
+                <span className="resultBadge">
+
+                  QR DETECTED
+
+                </span>
 
 
-              <div className="resultText">
+                <div className="resultText">
 
-                {scanResult}
+                  {scanResult}
+
+                </div>
 
               </div>
 
 
               <button
                 type="button"
-                className="download"
+                className="resultOpen"
                 onClick={openScanResult}
               >
 
-                Open Shared Files
+                Open
+
+                <span>
+                  →
+                </span>
 
               </button>
-
 
             </div>
 
           )}
-
 
         </section>
 
@@ -988,14 +1472,35 @@ function App() {
       </main>
 
 
-      {/* ================================================== */}
-      {/* FOOTER                                             */}
-      {/* ================================================== */}
+      {/* ==================================================== */}
+      {/* FOOTER                                               */}
+      {/* ==================================================== */}
 
-      <footer>
+      <footer className="footer">
 
-        PhotoShapeQR • Share multiple files
-        with a single QR code.
+        <div className="footerLogo">
+
+          PhotoShape<span>QR</span>
+
+        </div>
+
+
+        <p>
+
+          Simple. Beautiful. Shareable.
+
+        </p>
+
+
+        <div className="footerLine"></div>
+
+
+        <small>
+
+          © {new Date().getFullYear()}
+          PhotoShapeQR. Built for effortless sharing.
+
+        </small>
 
       </footer>
 
